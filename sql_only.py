@@ -7,17 +7,10 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from sqlglot import parse_one
 from sqlglot.expressions import Limit, Literal
+from guards import force_safe_select
 
 def strip_code_fences(text: str) -> str:
     return re.sub(r"^```(sql)?|```$", "", text.strip(), flags=re.IGNORECASE|re.MULTILINE)
-
-def force_safe_select(sql: str, limit: int = 1000, dialect: str | None = None) -> str:
-    tree = parse_one(sql, dialect)
-    if tree.key.upper() != "SELECT":
-        raise ValueError("Only SELECT queries are allowed")
-    if not tree.find(Limit):
-        tree.set("limit", Limit(this=Literal.number(limit)))
-    return tree.sql(dialect=dialect)
 
 def build_sql_only_chain(llm: ChatOpenAI, schema_text: str, limit: int = 1000, dialect: str | None = None ):
     prompt = ChatPromptTemplate.from_template(
